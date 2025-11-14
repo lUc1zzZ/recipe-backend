@@ -1,12 +1,11 @@
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 
 const app = express();
 
 // 中间件
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
 // 存储数据（生产环境请用数据库）
 let recipes = [];
@@ -14,7 +13,12 @@ let userData = {};
 
 // 健康检查端点
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Recipe Backend is running' });
+  res.json({ 
+    status: 'OK', 
+    message: 'Recipe Backend is running',
+    timestamp: new Date().toISOString(),
+    nodeVersion: process.version
+  });
 });
 
 // 同步食谱数据
@@ -23,7 +27,7 @@ app.post('/api/recipes/sync', (req, res) => {
   
   const { deviceId, recipes: deviceRecipes, timestamp } = req.body;
   
-  if (deviceRecipes) {
+  if (deviceRecipes && Array.isArray(deviceRecipes)) {
     // 简单的合并逻辑
     recipes = [...recipes, ...deviceRecipes];
     // 去重
@@ -53,7 +57,7 @@ app.post('/api/user/sync', (req, res) => {
   const { deviceId, favorites, settings } = req.body;
   
   if (!userData[deviceId]) {
-    userData[deviceId] = {};
+    userData[deviceId] = { favorites: [], settings: {} };
   }
   
   if (favorites) userData[deviceId].favorites = favorites;
@@ -61,7 +65,7 @@ app.post('/api/user/sync', (req, res) => {
   
   res.json({
     success: true,
-    message: 'User data synced'
+    message: 'User data synced successfully'
   });
 });
 
@@ -76,7 +80,23 @@ app.get('/api/user/:deviceId', (req, res) => {
   });
 });
 
+// TTS 代理端点
+app.post('/api/tts', (req, res) => {
+  const { text, voice = "xiaoyan" } = req.body;
+  
+  console.log('TTS request:', { text, voice });
+  
+  // 这里后续集成讯飞 TTS API
+  res.json({
+    success: true,
+    message: 'TTS request received (to be implemented)',
+    text: text
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT} with Node.js ${process.version}`);
 });
+
+module.exports = app;
